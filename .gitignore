@@ -1,0 +1,31 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Node
+backend/node_modules/
+.kilo/node_modules/
+
+# Database
+backend/orchestrator.db
+
+# Logs
+backend/debug.log
+backend/pty_out.log
+*.log
+
+# Backups
+*.bak
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/

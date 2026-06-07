@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni-Orchestrator - Master Radar</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- xterm.js -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+
+    <style>
+        .layout-wrapper {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        .dashboard-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .projects-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--secondary-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .projects-table th, .projects-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .projects-table th {
+            background: rgba(0,0,0,0.3);
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+        .projects-table tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .status-idle { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+        .status-running { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .status-error { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        
+        /* Command Center Modal */
+        .cmd-modal {
+            width: 1200px;
+            max-width: 98vw;
+            height: 85vh;
+            max-height: 98vh;
+            min-width: 800px;
+            min-height: 500px;
+            resize: both;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .cmd-header {
+            padding: 15px 20px;
+            background: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cmd-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .cmd-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .cmd-sidebar {
+            width: 300px;
+            background: rgba(0,0,0,0.2);
+            border-left: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding-right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        /* Agent Sidebar */
+        .agent-sidebar {
+            width: 250px;
+            background: rgba(0,0,0,0.2);
+            border-left: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+        #terminal-container {
+            flex: 1;
+            background: transparent;
+            padding: 10px;
+            overflow: hidden;
+        }
+        .xterm .xterm-viewport {
+            overflow-y: auto !important;
+        }
+        .agent-status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--secondary-bg);
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .dot-green { background-color: #10b981; box-shadow: 0 0 5px #10b981; }
+        .dot-red { background-color: #ef4444; }
+
+        /* Chip list for provider/model */
+        .chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .chip {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            transition: all 0.15s ease;
+        }
+        .chip:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
+        }
+        .chip.active {
+            background: rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+            color: white;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-bar" style="padding: 15px 20px; background: var(--secondary-bg); border-bottom: 1px solid var(--border-color);">
+        <h2 style="margin:0; color: #3b82f6;">Omni-Orchestrator</h2>
+        <div>
+            <button type="button" id="btn-add-local" class="btn primary">📁 Add Local</button>
+            <button type="button" id="btn-clone-git" class="btn secondary">📥 Clone Git</button>
+        </div>
+    </div>
+
+    <div class="layout-wrapper">
+        <div class="dashboard-container">
+            <table class="projects-table">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Repo</th>
+                        <th>Agent </th>
+                        <th>Status </th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="projects-tbody">
+                    <!-- Injected via JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <aside class="agent-sidebar">
+            <h3 style="margin-bottom: 10px; font-size: 1rem; color: #94a3b8; text-transform: uppercase;">Agent Health</h3>
+            <div id="agent-status-list">
+                <!-- Injected via JS -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Project Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <h3 id="modal-title">Add Project</h3>
+            <input type="text" id="input-project-name" placeholder="Project Name">
+            <div style="display: flex; gap: 10px; margin: 10px 0;">
+                <input type="text" id="input-project-path" placeholder="Local Target Path" style="flex: 1; margin: 0;">
+                <button type="button" id="btn-browse-folder" class="btn secondary" style="white-space: nowrap;">Browse...</button>
+            </div>
+            <input type="text" id="input-repo-url" class="hidden" placeholder="Git Repository URL (https://...)">
+            <div class="modal-actions">
+                <button type="button" id="btn-modal-cancel" class="btn secondary">Cancel</button>
+                <button type="button" id="btn-modal-submit" class="btn primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Command Center Modal -->
+    <div id="modal-cmd-overlay" class="modal-overlay hidden">
+        <div class="cmd-modal">
+            <div class="cmd-header">
+                <div>
+                    <h2 id="cmd-project-name" style="margin: 0;">Project Name</h2>
+                    <span id="cmd-project-path" style="font-size: 0.8rem; color: #94a3b8;">/path</span>
+                </div>
+                <div>
+                    <button type="button" id="btn-close-cmd" class="btn secondary">❌ Close</button>
+                </div>
+            </div>
+            <div class="cmd-body">
+                <div class="cmd-explorer" style="width: 250px; background: rgba(0,0,0,0.2); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 15px; border-bottom-left-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0; color: #cbd5e1; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Explorer</h4>
+                    <div id="file-tree" style="flex: 1; overflow-y: auto; font-size: 0.85rem; color: #94a3b8; display: flex; flex-direction: column; gap: 2px; padding-right: 5px;">
+                        Loading...
+                    </div>
+                </div>
+                <div class="cmd-main" style="display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #cbd5e1;">Agent Terminal</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" id="btn-restart-agent" class="btn secondary" style="display: none; border-color: #f59e0b; color: #f59e0b;">🔄 Refresh</button>
+                            <button type="button" id="btn-kill-agent" class="btn secondary" style="display: none; border-color: #ef4444; color: #ef4444;">⏹ Kill Agent</button>
+                            <button type="button" id="btn-start-agent" class="btn primary">▶ Start Agent</button>
+                        </div>
+                    </div>
+                    <div id="terminal-container"></div>
+                </div>
+                <div class="cmd-sidebar">
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 10px;">Agent Config</h4>
+                        <select id="agent-select" class="btn secondary" style="width: 100%; margin-bottom: 10px; text-align: left;">
+                            <option value="kilo" class="agent-opt-kilo">Kilo CLI</option>
+                            <option value="gemini" class="agent-opt-gemini">Gemini CLI</option>
+                            <option value="opencode" class="agent-opt-opencode">Open Code CLI</option>
+                            <option value="claude" class="agent-opt-claude">Claude Code</option>
+                            <option value="codex" class="agent-opt-codex">Codex CLI</option>
+                            <option value="blackbox" class="agent-opt-blackbox">Blackbox</option>
+                        </select>
+                        <h4 style="margin: 10px 0 6px; font-size: 0.8rem; color: #94a3b8;">Active Model</h4>
+                        <input type="text" id="model-display" class="btn secondary" style="width: 100%; text-align: left; background: rgba(0,0,0,0.3); color: #64748b; cursor: not-allowed;" value="Managed by Terminal" disabled />
+                    </div>
+                    
+                    <h4 style="margin-bottom: 10px;">Context Files</h4>
+                    <div id="context-list" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px;"></div>
+                    <button type="button" id="btn-add-context" class="btn secondary sm" style="width: 100%; margin-top: 10px;">+ Add Context File</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Context Add -->
+    <div id="modal-context-overlay" class="modal-overlay hidden" style="z-index: 1000;">
+        <div class="modal" style="width: 500px;">
+            <h3 style="margin-bottom: 15px;">Add / Edit Context File</h3>
+            <input type="text" id="input-ctx-name" placeholder="File Name (e.g. prompt.md)">
+            <textarea id="input-ctx-content" placeholder="Paste your markdown content here..." rows="10" style="width: 100%; padding: 12px; margin: 10px 0; background: var(--secondary-bg); border: 1px solid var(--border-color); color: white; border-radius: 8px; outline: none; font-family: monospace; resize: vertical;"></textarea>
+            <div class="modal-actions">
+                <button type="button" id="btn-modal-ctx-cancel" class="btn secondary">Cancel</button>
+                <button type="button" id="btn-modal-ctx-submit" class="btn primary">Save File</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=2"></script>
+</body>
+</html>
