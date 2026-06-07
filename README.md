@@ -18,4 +18,4 @@ Use :
 
 Preview :
 
-[mainview](https://raw.githubusercontent.com/momadhuynh04/ProjectManage/refs/heads/master/image.png)
+![mainview](https://raw.githubusercontent.com/momadhuynh04/ProjectManage/refs/heads/master/image.png)
