@@ -19,3 +19,5 @@ Use :
 Preview :
 
 ![mainview](https://raw.githubusercontent.com/momadhuynh04/ProjectManage/refs/heads/master/image.png)
+
+![cmdview](https://raw.githubusercontent.com/momadhuynh04/ProjectManage/refs/heads/master/image_2026-06-08_034207404.png)
